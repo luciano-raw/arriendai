@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-const base = process.env.APP_URL || 'http://127.0.0.1:3001';
+const base = process.env.APP_URL || 'http://localhost:3000';
 for (const path of ['/', '/sign-in']) {
   const response = await fetch(new URL(path, base), { redirect: 'manual', signal: AbortSignal.timeout(60000) });
   assert.equal(response.status, 200, `${path} debe estar disponible`);

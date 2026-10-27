@@ -7,7 +7,7 @@ MVP de gestión inmobiliaria para Chile. Next.js App Router, React, TypeScript, 
 1. Copiar `.env.example` a `.env.local` y completar las conexiones PostgreSQL y las claves de desarrollo de la aplicación seleccionada de Clerk.
 2. Ejecutar `npm ci`.
 3. Ejecutar `npm run db:migrate` para aplicar migraciones pendientes.
-4. Ejecutar `npm run dev` y abrir http://127.0.0.1:3000.
+4. Ejecutar `npm run dev` y abrir http://localhost:3000. Se usa el mismo host que Clerk en desarrollo para evitar errores de resolución IPv4/IPv6.
 
 La ruta `/` es una demostración con datos locales del navegador. `/sign-in` y `/sign-up` contienen Clerk; `/cartera` requiere sesión y permite listar/crear propiedades persistentes. Sin ambas claves de Clerk, la demostración sigue disponible y el acceso privado responde con indisponibilidad, nunca con datos de otra cuenta.
 

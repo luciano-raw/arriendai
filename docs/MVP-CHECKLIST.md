@@ -15,7 +15,8 @@
 - [ ] Configurar despliegue en Vercel (a cargo del usuario).
 - [x] Conectar Supabase PostgreSQL mediante Prisma y aplicar migración inicial.
 - [x] Preparar provider, acceso, registro y rutas privadas de Clerk.
-- [ ] Completar claves locales de Clerk y verificar inicio de sesión real.
+- [x] Completar claves locales de Clerk y validar acceso a la instancia.
+- [ ] Verificar primer inicio de sesión interactivo con el usuario.
 - [ ] Habilitar organizaciones y migrar cartera privada a equipos compartidos.
 - [ ] Autorizar cada lectura y escritura por empresa activa en el servidor.
 - [ ] Roles administrador y ejecutivo; probar aislamiento entre empresas.
