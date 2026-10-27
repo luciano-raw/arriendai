@@ -1,0 +1,1 @@
+export default function BrandMark(){return <svg viewBox="0 0 40 44" width="27" height="30" fill="none" aria-hidden="true"><path d="M3 41V16L19 4v10L11 20v21H3Z" fill="currentColor"/><path d="M21 1 37 13v13l-8-6v21h-8V1Z" fill="currentColor"/><path d="m14 24 5-4v21h-5V24Z" fill="#75bdb2"/><path d="m31 29 6 4v8h-6V29Z" fill="#d2a460"/></svg>;}

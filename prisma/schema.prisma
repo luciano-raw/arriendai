@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model Workspace {
+  id          String     @id @default(cuid())
+  clerkUserId String     @unique
+  name        String     @default("Mi inmobiliaria")
+  createdAt   DateTime   @default(now())
+  properties  Property[]
+}
+
+model Property {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String    @db.VarChar(100)
+  address     String    @db.VarChar(200)
+  owner       String    @db.VarChar(100)
+  tenant      String    @default("Sin arrendatario") @db.VarChar(100)
+  rent        Decimal   @db.Decimal(14, 0)
+  status      String    @default("Disponible") @db.VarChar(30)
+  type        String    @db.VarChar(30)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, createdAt])
+}
