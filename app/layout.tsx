@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './connected.css';
 import { ClerkProvider } from '@clerk/nextjs';
 export const metadata: Metadata = { title: 'ArriendAI · Gestión inmobiliaria', description: 'Tu cartera inmobiliaria, bajo control.' };
 export default function RootLayout({ children }: Readonly<{children: React.ReactNode}>) {

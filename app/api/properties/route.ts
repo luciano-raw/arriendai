@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../lib/db';
 import { getWorkspace } from '../../../lib/workspace';
+import { AccessError } from '../../../lib/access';
+import { operate } from '../../../lib/operations';
 
 export const dynamic = 'force-dynamic';
 const propertySchema = z.object({
@@ -18,8 +20,8 @@ export async function GET() {
     if (!workspace) return NextResponse.json({ error: 'Inicia sesión para acceder a tu cartera.' }, { status: 401 });
     const properties = await db.property.findMany({ where: { workspaceId: workspace.id }, orderBy: { createdAt: 'desc' } });
     return NextResponse.json(properties.map(p => ({ ...p, rent: p.rent.toNumber() })), { headers: { 'Cache-Control': 'private, no-store' } });
-  } catch {
-    return NextResponse.json({ error: 'No pudimos cargar tu cartera. Intenta nuevamente.' }, { status: 503 });
+  } catch(error) {
+    return NextResponse.json({ error: error instanceof AccessError?error.message:'No pudimos cargar tu cartera. Intenta nuevamente.' }, { status: error instanceof AccessError?error.status:503 });
   }
 }
 
@@ -37,9 +39,9 @@ export async function POST(request: Request) {
     if (!workspace) return NextResponse.json({ error: 'Inicia sesión para agregar propiedades.' }, { status: 401 });
     const parsed = propertySchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: 'Revisa los campos de la propiedad.' }, { status: 400 });
-    const property = await db.property.create({ data: { ...parsed.data, workspaceId: workspace.id } });
-    return NextResponse.json({ ...property, rent: property.rent.toNumber() }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'No pudimos guardar la propiedad. Intenta nuevamente.' }, { status: 503 });
+    const property = await operate(workspace.id, {action:'property',...parsed.data});
+    return NextResponse.json(property, { status: 201 });
+  } catch(error) {
+    return NextResponse.json({ error: error instanceof AccessError?error.message:'No pudimos guardar la propiedad. Intenta nuevamente.' }, { status: error instanceof AccessError?error.status:503 });
   }
 }

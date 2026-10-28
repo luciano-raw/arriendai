@@ -8,10 +8,26 @@ datasource db {
 
 model Workspace {
   id          String     @id @default(cuid())
-  clerkUserId String     @unique
+  clerkUserId String?    @unique
   name        String     @default("Mi inmobiliaria")
   createdAt   DateTime   @default(now())
   properties  Property[]
+  status      String     @default("ACTIVE")
+  demo        Boolean    @default(false)
+  members     Membership[]
+  subscription Subscription?
+  contacts    Contact[]
+  contracts   Contract[]
+  charges     Charge[]
+  payments    Payment[]
+  grants      AdminGrant[]
+}
+
+model AdminGrant {
+  email String @id
+  consumedBy String? @unique
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 }
 
 model Property {
@@ -27,6 +43,98 @@ model Property {
   type        String    @db.VarChar(30)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  contracts   Contract[]
 
   @@index([workspaceId, createdAt])
+}
+
+model AppUser {
+  id          String @id @default(cuid())
+  clerkUserId String @unique
+  email       String @unique
+  name        String
+  role        String @default("USER")
+  status      String @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  memberships Membership[]
+}
+
+model Membership {
+  id          String @id @default(cuid())
+  userId      String
+  workspaceId String
+  user        AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Subscription {
+  id          String @id @default(cuid())
+  workspaceId String @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan        String @default("INICIAL")
+  status      String @default("TRIAL")
+  monthlyPrice Decimal @default(29990) @db.Decimal(14, 0)
+  propertyLimit Int @default(25)
+  currentPeriodEnd DateTime?
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id          String @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  email       String?
+  kind        String
+  ownedContracts Contract[] @relation("Owner")
+  rentedContracts Contract[] @relation("Tenant")
+  @@index([workspaceId])
+}
+
+model Contract {
+  id String @id @default(cuid())
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  propertyId String
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  ownerId String
+  owner Contact @relation("Owner", fields: [ownerId], references: [id], onDelete: Restrict)
+  tenantId String
+  tenant Contact @relation("Tenant", fields: [tenantId], references: [id], onDelete: Restrict)
+  startDate DateTime
+  endDate DateTime
+  rent Decimal @db.Decimal(14, 0)
+  status String @default("ACTIVE")
+  charges Charge[]
+  @@index([workspaceId])
+}
+
+model Charge {
+  id String @id @default(cuid())
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contractId String
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  period String
+  dueDate DateTime
+  amount Decimal @db.Decimal(14, 0)
+  payments Payment[]
+  @@unique([contractId, period])
+  @@index([workspaceId, dueDate])
+}
+
+model Payment {
+  id String @id @default(cuid())
+  workspaceId String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  chargeId String
+  charge Charge @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+  amount Decimal @db.Decimal(14, 0)
+  paidAt DateTime
+  reference String
+  idempotencyKey String @unique
+  createdAt DateTime @default(now())
+  @@index([workspaceId, paidAt])
 }
