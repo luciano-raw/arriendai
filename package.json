@@ -10,7 +10,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:check": "node scripts/check-db.mjs",
     "db:seed-demo": "node scripts/seed-demo.mjs",
-    "test": "node --import tsx --test tests/ledger.test.mjs",
+    "test": "node --import tsx --test tests/ledger.test.mjs tests/charge-plan.test.mjs",
     "test:db": "node --conditions=react-server --import tsx --test tests/operations.test.ts"
   },
   "license": "ISC",

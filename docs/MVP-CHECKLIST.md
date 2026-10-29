@@ -31,7 +31,9 @@
 - [ ] CRUD persistente de propiedades y asociación de propietario.
 - [ ] Contratos con fechas, moneda CLP/UF, garantía y comisión.
 - [x] Contratos CLP con fechas, propietario, arrendatario y validación de superposición.
-- [ ] Generación idempotente de cargos mensuales y vencimientos.
+- [x] Generación mensual bajo demanda con vista previa, sin duplicar ni modificar cargos existentes.
+- [x] Día de pago editable por contrato y ajuste a meses cortos.
+- [ ] Programar ejecución mensual automática con monitoreo y reintentos.
 - [x] Alta manual de un cargo por contrato y período, sin duplicados.
 - [x] Registro manual de pagos parciales y completos; saldo y morosidad calculados.
 - [ ] Ingresos, egresos y liquidaciones de propietarios.
@@ -42,6 +44,7 @@
 
 ## 4. Salida a piloto
 - [x] Pruebas de aislamiento operativo, abonos, sobrepagos, idempotencia y fechas de Chile.
+- [x] Pruebas de generación mensual, meses parciales, años bisiestos y conservación de cargos manuales.
 - [ ] Revisión interactiva de roles y membresías con cuentas reales del piloto.
 - [ ] Copias de seguridad, monitoreo y recuperación de errores.
 - [ ] Revisión de privacidad, términos y conservación de documentos.
@@ -53,6 +56,9 @@ Portales de propietarios y arrendatarios, mantenciones, pasarela de pagos, Whats
 
 ## Primer incremento conectado
 La ruta `/` dirige a la cartera autenticada. `/admin` requiere rol ADMIN persistido; `/cartera` valida membresía o administración. La carga idempotente prepara registros ficticios operativos y una reserva de alta para `luciano.raw04@gmail.com`. Las cifras de la interfaz se calculan desde contratos, cargos y pagos. La administración de suscripciones define acceso, vigencia y límites, pero no procesa cobros. Clerk Organizations, portales, pagos externos, egresos y liquidaciones continúan fuera de este incremento.
+
+## Generación mensual
+En Pagos → Preparar mes se obtiene una vista previa desde los contratos de la inmobiliaria. Se crean solo cargos faltantes de meses completos de contratos activos. El día de pago se configura al crear el contrato o se edita desde Contratos; los días 29–31 se ajustan al fin del mes cuando corresponde. Los cargos y pagos existentes no se modifican. Los meses parciales requieren revisar el monto y registrar el cargo manualmente. Esta función aún se ejecuta desde el panel, sin tarea programada.
 
 ## Decisiones iniciales
 Una empresa contiene propiedades, personas, contratos, cargos, pagos y documentos. Toda entidad operativa tendrá un identificador de empresa. El servidor derivará la empresa desde la sesión autenticada; nunca confiará en un identificador enviado por el navegador. Los importes se almacenarán con precisión decimal y los pagos se asignarán a cargos para permitir abonos parciales. No se habilitarán operaciones reales hasta implementar autenticación y aislamiento.

@@ -9,9 +9,10 @@ const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>!Number.isNaN(Date.
 export const operation=z.discriminatedUnion('action',[
  z.object({action:z.literal('property'),name:text,address:text,owner:text,rent:money,type:z.enum(['Departamento','Casa','Oficina','Local comercial'])}),
  z.object({action:z.literal('contact'),name:text,email:z.union([z.email(),z.literal('')]),kind:z.enum(['OWNER','TENANT'])}),
- z.object({action:z.literal('contract'),propertyId:id,ownerId:id,tenantId:id,startDate:date,endDate:date,rent:money}),
+ z.object({action:z.literal('contract'),propertyId:id,ownerId:id,tenantId:id,startDate:date,endDate:date,rent:money,paymentDay:z.number().int().min(1).max(31).default(5)}),
  z.object({action:z.literal('charge'),contractId:id,period:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),dueDate:date,amount:money}),
  z.object({action:z.literal('payment'),chargeId:id,amount:money,paidAt:date,reference:text,idempotencyKey:z.uuid()}),
+ z.object({action:z.literal('paymentDay'),contractId:id,paymentDay:z.number().int().min(1).max(31)}),
 ]);
 export async function operate(workspaceId:string, input:z.infer<typeof operation>){
  return db.$transaction(tx=>runOperation(tx,workspaceId,input),{timeout:20000});
@@ -34,7 +35,7 @@ export async function runOperation(tx:Prisma.TransactionClient,workspaceId:strin
    const startDate=new Date(input.startDate+'T12:00:00Z'),endDate=new Date(input.endDate+'T12:00:00Z');
    if(await tx.contract.findFirst({where:{propertyId:property.id,workspaceId,status:'ACTIVE',startDate:{lte:endDate},endDate:{gte:startDate}}}))throw new AccessError('La propiedad ya tiene un contrato durante ese período.',409);
    await tx.property.update({where:{id:property.id},data:{owner:owner.name,tenant:tenant.name,status:'Arrendada',rent:input.rent}});
-   return tx.contract.create({data:{workspaceId,propertyId:property.id,ownerId:owner.id,tenantId:tenant.id,startDate,endDate,rent:input.rent}});
+   return tx.contract.create({data:{workspaceId,propertyId:property.id,ownerId:owner.id,tenantId:tenant.id,startDate,endDate,rent:input.rent,paymentDay:input.paymentDay}});
   }
   if(input.action==='charge'){
    if(!input.dueDate.startsWith(input.period))throw new AccessError('El vencimiento debe corresponder al mes del cargo.',400);
@@ -44,6 +45,11 @@ export async function runOperation(tx:Prisma.TransactionClient,workspaceId:strin
    if(dueDate<contract.startDate||dueDate>contract.endDate)throw new AccessError('El vencimiento debe quedar dentro del contrato.',400);
    if(await tx.charge.findUnique({where:{contractId_period:{contractId:contract.id,period:input.period}}}))throw new AccessError('Este contrato ya tiene un cargo en ese mes.',409);
    return tx.charge.create({data:{workspaceId,contractId:contract.id,period:input.period,dueDate,amount:input.amount}});
+  }
+  if(input.action==='paymentDay'){
+   const updated=await tx.contract.updateMany({where:{id:input.contractId,workspaceId},data:{paymentDay:input.paymentDay}});
+   if(!updated.count)throw new AccessError('Contrato no disponible.',404);
+   return tx.contract.findUniqueOrThrow({where:{id:input.contractId}});
   }
   const charge=await tx.charge.findFirst({where:{id:input.chargeId,workspaceId},include:{payments:true}});
   if(!charge)throw new AccessError('Cargo no disponible.',404);

@@ -7,6 +7,7 @@ test('operaciones reales: aislamiento, límites, superposición, abonos e idempo
  const { db }=await import('../lib/db');
  const { runOperation, operation }=await import('../lib/operations');
  const { syncIdentity }=await import('../lib/identity');
+ const { generateMonthlyCharges }=await import('../lib/monthly-charges');
  const rollback=new Error('rollback');
  try{await db.$transaction(async tx=>{
   const a=await tx.workspace.create({data:{name:'Prueba temporal A',subscription:{create:{propertyLimit:1}}}});
@@ -30,6 +31,16 @@ test('operaciones reales: aislamiento, límites, superposición, abonos e idempo
   await assert.rejects(()=>runOperation(tx,b.id,operation.parse({...payment,idempotencyKey:crypto.randomUUID()})),/no disponible/);
   await runOperation(tx,a.id,operation.parse({...payment,amount:60000,idempotencyKey:crypto.randomUUID()}));
   const paid=await tx.payment.aggregate({where:{chargeId:charge.id},_sum:{amount:true}});assert.equal(paid._sum.amount?.toNumber(),100000);
+  await runOperation(tx,a.id,operation.parse({action:'paymentDay',contractId:contract.id,paymentDay:31}));
+  await assert.rejects(()=>runOperation(tx,b.id,operation.parse({action:'paymentDay',contractId:contract.id,paymentDay:1})),/no disponible/);
+  assert.equal((await tx.contract.findUniqueOrThrow({where:{id:contract.id}})).paymentDay,31);
+  const generated=await generateMonthlyCharges(tx,a.id,'2026-02');assert.equal(generated.created,1);assert.equal(generated.total,100000);
+  const february=await tx.charge.findUniqueOrThrow({where:{contractId_period:{contractId:contract.id,period:'2026-02'}}});assert.equal(february.dueDate.toISOString().slice(0,10),'2026-02-28');
+  const repeated=await generateMonthlyCharges(tx,a.id,'2026-02');assert.equal(repeated.created,0);assert.equal(repeated.existing,1);
+  const foreign=await generateMonthlyCharges(tx,b.id,'2026-02');assert.equal(foreign.created,0);assert.equal(foreign.existing,0);
+  const january=await generateMonthlyCharges(tx,a.id,'2026-01');assert.equal(january.created,0);assert.equal(await tx.payment.count({where:{chargeId:charge.id}}),2);
+  await runOperation(tx,a.id,operation.parse({action:'charge',contractId:contract.id,period:'2026-03',dueDate:'2026-03-12',amount:90000}));
+  await generateMonthlyCharges(tx,a.id,'2026-03');const manual=await tx.charge.findUniqueOrThrow({where:{contractId_period:{contractId:contract.id,period:'2026-03'}}});assert.equal(manual.amount.toNumber(),90000);assert.equal(manual.dueDate.toISOString().slice(0,10),'2026-03-12');
   const unique=crypto.randomUUID();const identity={clerkUserId:'test_'+unique,email:unique+'@example.com',name:'Administrador de prueba',verified:true};
   await tx.adminGrant.create({data:{email:identity.email,workspaceId:a.id}});
   await assert.rejects(()=>syncIdentity(tx,{...identity,verified:false}),/Verifica/);

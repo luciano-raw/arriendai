@@ -23,6 +23,10 @@ const crossOrigin = await fetch(new URL('/api/properties', base), { method: 'POS
 assert.equal(crossOrigin.status, 403, 'El formulario debe rechazar orígenes ajenos');
 await crossOrigin.body?.cancel();
 console.log('OK POST de origen ajeno: 403');
+for(const method of ['GET','POST']){
+ const response=await fetch(new URL('/api/charges?period=2026-11',base),{method,headers:{Origin:base,'Content-Type':'application/json'},body:method==='POST'?JSON.stringify({period:'2026-11'}):undefined,redirect:'manual',signal:AbortSignal.timeout(60000)});
+ assert.equal(response.status,401,`La generación mensual debe exigir sesión (${method})`);await response.body?.cancel();console.log(`OK ${method} /api/charges sin sesión: 401`);
+}
 for (const path of ['/admin', '/api/admin', '/api/portfolio']) {
  const response=await fetch(new URL(path,base),{method:path==='/admin'?'GET':'POST',headers:{Origin:base,'Content-Type':'application/json'},body:path==='/admin'?undefined:JSON.stringify({action:'workspace'}),redirect:'manual',signal:AbortSignal.timeout(60000)});
  assert.equal(response.status,path==='/admin'?307:401,`${path} debe exigir sesión`);await response.body?.cancel();console.log(`OK ${path} sin sesión: ${response.status}`);

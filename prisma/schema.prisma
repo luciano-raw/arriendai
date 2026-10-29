@@ -106,6 +106,7 @@ model Contract {
   startDate DateTime
   endDate DateTime
   rent Decimal @db.Decimal(14, 0)
+  paymentDay Int @default(5)
   status String @default("ACTIVE")
   charges Charge[]
   @@index([workspaceId])
